@@ -57,6 +57,7 @@ func UploadDocument(c *fiber.Ctx) error {
 	description := form.Value["description"][0]
 	sourceLanguage := form.Value["sourceLanguage"][0]
 	targetLanguage := form.Value["targetLanguage"][0]
+	numberOfPages := form.Value["numberOfPages"][0]
 
 	// Store file and metadata in the database
 	db, err := database.Connect()
@@ -71,6 +72,7 @@ func UploadDocument(c *fiber.Ctx) error {
 		FilePath:       savePath,
 		SourceLanguage: sourceLanguage,
 		TargetLanguage: targetLanguage,
+		NumberOfPages:  numberOfPages,
 		Status:         "Pending", // Default status set when uploading a new document
 	}
 

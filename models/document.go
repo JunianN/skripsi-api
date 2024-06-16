@@ -13,6 +13,7 @@ type Document struct {
 	FilePath       string
 	SourceLanguage string
 	TargetLanguage string
+	NumberOfPages  string
 	TranslatedPath string
 	Status         string // Added to track translation status
 }
