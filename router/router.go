@@ -13,22 +13,28 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 		return c.SendString("Ini API untuk web app sistem layanan penerjemahan dokumen.")
 	})
 
-	app.Post("/api/register", handlers.Register(db))
-	app.Post("/api/login", handlers.Login(db))
+	api := app.Group("/api")
 
-	app.Post("/api/upload", middleware.Authenticated(), handlers.UploadDocument)
-	app.Get("/api/documents", middleware.Authenticated(), handlers.GetDocuments)
+	api.Post("/register", handlers.Register(db))
+	api.Post("/login", handlers.Login(db))
 
-	app.Post("/api/documents/:id/messages", middleware.Authenticated(), handlers.AddMessage)
-	app.Get("/api/documents/:id/messages", middleware.Authenticated(), handlers.GetMessages)
+	api.Post("/upload", middleware.Authenticated(), handlers.UploadDocument)
+	api.Get("/documents", middleware.Authenticated(), handlers.GetDocuments)
+	api.Get("/documents/:id", middleware.Authenticated(), handlers.GetDocument)
 
-	app.Get("/api/translations", handlers.ListTranslations(db))
-	app.Post("/api/translations", handlers.AddTranslation(db))
+	api.Get("/documents/:id/discussions", middleware.Authenticated(), handlers.GetDiscussions)
+    api.Post("/documents/:id/discussions", middleware.Authenticated(), handlers.PostDiscussion)
 
-	app.Post("/api/notifications", handlers.SendNotification(db))
+	api.Post("/documents/:id/messages", middleware.Authenticated(), handlers.AddMessage)
+	api.Get("/documents/:id/messages", middleware.Authenticated(), handlers.GetMessages)
+
+	api.Get("/translations", handlers.ListTranslations(db))
+	api.Post("/translations", handlers.AddTranslation(db))
+
+	api.Post("/notifications", handlers.SendNotification(db))
 
 	// Admin routes
-    admin := app.Group("/admin")
+    admin := app.Group("/api/admin")
     admin.Use(middleware.Authenticated())
     // admin.Use(middleware.AdminRequired())
 	
@@ -36,8 +42,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	admin.Patch("/documents/:id/assign", handlers.AssignDocument)
 
 	// Group routes for translators
-    translators := app.Group("/translators")
+    translators := app.Group("/api/translators")
     translators.Use(middleware.Authenticated())
+
     translators.Patch("/documents/:id/status", handlers.UpdateDocumentStatus)
 	translators.Get("/documents", handlers.GetTranslatorDocuments)
 	translators.Post("/documents/:id/upload_translation", handlers.UploadTranslatedDocument)

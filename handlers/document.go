@@ -9,6 +9,24 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// GetDocument retrieves the details of a specific document by ID
+func GetDocument(c *fiber.Ctx) error {
+    userID := c.Locals("userID")
+    documentID := c.Params("id")
+
+    db, err := database.Connect()
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
+    }
+
+    var document models.Document
+    if err := db.Where("id = ? AND user_id = ?", documentID, userID).First(&document).Error; err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+    }
+
+    return c.JSON(document)
+}
+
 // GetDocuments returns a list of documents for the authenticated user
 func GetDocuments(c *fiber.Ctx) error {
 	userID := c.Locals("userID") // Assuming userID is stored in Locals after authentication
