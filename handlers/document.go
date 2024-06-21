@@ -232,9 +232,31 @@ func UploadTranslatedDocument(c *fiber.Ctx) error {
 	}
 
 	// Update document record with translated file path and update status
-	document.TranslatedPath = savePath
+	document.TranslatedFilePath = savePath
 	document.Status = "Completed"
 	db.Save(&document)
 
 	return c.JSON(fiber.Map{"message": "Translated document uploaded successfully", "data": document})
+}
+
+// DownloadTranslatedDocument handles the downloading of the translated document
+func DownloadTranslatedDocument(c *fiber.Ctx) error {
+    userID := c.Locals("userID")
+    documentID := c.Params("id")
+
+    db, err := database.Connect()
+    if err != nil {
+        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
+    }
+
+    var document models.Document
+    if err := db.Where("id = ? AND user_id = ?", documentID, userID).First(&document).Error; err != nil {
+        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+    }
+
+    if !document.PaymentConfirmed {
+        return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Payment not confirmed"})
+    }
+	
+    return c.SendFile(document.TranslatedFilePath)
 }

@@ -25,8 +25,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	api.Get("/documents/:id/discussions", middleware.Authenticated(), handlers.GetDiscussions)
     api.Post("/documents/:id/discussions", middleware.Authenticated(), handlers.PostDiscussion)
 
-	api.Post("/documents/:id/messages", middleware.Authenticated(), handlers.AddMessage)
-	api.Get("/documents/:id/messages", middleware.Authenticated(), handlers.GetMessages)
+	api.Get("/documents/:id/download", middleware.Authenticated(), handlers.DownloadTranslatedDocument)
 
 	api.Get("/translations", handlers.ListTranslations(db))
 	api.Post("/translations", handlers.AddTranslation(db))
