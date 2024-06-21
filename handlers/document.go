@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"path/filepath"
-	"strconv"
 	"translation-app-backend/database"
 	"translation-app-backend/models"
 
@@ -11,20 +10,20 @@ import (
 
 // GetDocument retrieves the details of a specific document by ID
 func GetDocument(c *fiber.Ctx) error {
-    userID := c.Locals("userID")
-    documentID := c.Params("id")
+	userID := c.Locals("userID")
+	documentID := c.Params("id")
 
-    db, err := database.Connect()
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
-    }
+	db, err := database.Connect()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
+	}
 
-    var document models.Document
-    if err := db.Where("id = ? AND user_id = ?", documentID, userID).First(&document).Error; err != nil {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
-    }
+	var document models.Document
+	if err := db.Where("id = ? AND user_id = ?", documentID, userID).First(&document).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+	}
 
-    return c.JSON(document)
+	return c.JSON(document)
 }
 
 // GetDocuments returns a list of documents for the authenticated user
@@ -97,26 +96,6 @@ func UploadDocument(c *fiber.Ctx) error {
 	db.Create(&doc)
 
 	return c.JSON(fiber.Map{"message": "File uploaded successfully", "data": doc})
-}
-
-// GetAllDocuments retrieves all documents from the database
-func GetAllDocuments(c *fiber.Ctx) error {
-	db, err := database.Connect()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
-	}
-
-	var documents []models.Document
-	// Example of simple pagination
-	page, _ := strconv.Atoi(c.Query("page", "1"))
-	limit := 10 // items per page
-	offset := (page - 1) * limit
-
-	if err := db.Offset(offset).Limit(limit).Find(&documents).Error; err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch documents"})
-	}
-
-	return c.JSON(documents)
 }
 
 // AssignDocument assigns a document to a translator
@@ -241,22 +220,22 @@ func UploadTranslatedDocument(c *fiber.Ctx) error {
 
 // DownloadTranslatedDocument handles the downloading of the translated document
 func DownloadTranslatedDocument(c *fiber.Ctx) error {
-    userID := c.Locals("userID")
-    documentID := c.Params("id")
+	userID := c.Locals("userID")
+	documentID := c.Params("id")
 
-    db, err := database.Connect()
-    if err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
-    }
+	db, err := database.Connect()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
+	}
 
-    var document models.Document
-    if err := db.Where("id = ? AND user_id = ?", documentID, userID).First(&document).Error; err != nil {
-        return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
-    }
+	var document models.Document
+	if err := db.Where("id = ? AND user_id = ?", documentID, userID).First(&document).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+	}
 
-    if !document.PaymentConfirmed {
-        return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Payment not confirmed"})
-    }
-	
-    return c.SendFile(document.TranslatedFilePath)
+	if !document.PaymentConfirmed {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Payment not confirmed"})
+	}
+
+	return c.SendFile(document.TranslatedFilePath)
 }

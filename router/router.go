@@ -13,10 +13,13 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 		return c.SendString("Ini API untuk web app sistem layanan penerjemahan dokumen.")
 	})
 
-	api := app.Group("/api")
+	// auth routes
+	app.Post("/register", handlers.Register(db))
+	app.Post("api/login", handlers.Login(db))
 
-	api.Post("/register", handlers.Register(db))
-	api.Post("/login", handlers.Login(db))
+	// user routes
+	api := app.Group("/api")
+	api.Use(middleware.Authenticated())
 
 	api.Post("/upload", middleware.Authenticated(), handlers.UploadDocument)
 	api.Get("/documents", middleware.Authenticated(), handlers.GetDocuments)
@@ -35,9 +38,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	// Admin routes
     admin := app.Group("/api/admin")
     admin.Use(middleware.Authenticated())
-    // admin.Use(middleware.AdminRequired())
-	
-    admin.Get("/documents", handlers.GetAllDocuments)
+    admin.Use(middleware.AdminRequired())
+
+	admin.Get("/documents", handlers.GetAllDocuments(db))
+	admin.Get("/documents/:id", handlers.GetDocumentDetails(db))
+	admin.Get("/documents/:id/download", handlers.DownloadUserDocument(db))
 	admin.Patch("/documents/:id/assign", handlers.AssignDocument)
 
 	// Group routes for translators
