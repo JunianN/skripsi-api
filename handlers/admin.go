@@ -57,3 +57,81 @@ func DownloadUserDocument(db *gorm.DB) fiber.Handler {
 		return nil
 	}
 }
+
+// ApproveDocument sets the approval status of a document to 'Approved'
+func ApproveDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		document.ApprovalStatus = "Approved"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Document approved successfully"})
+	}
+}
+
+// RejectDocument sets the approval status of a document to 'Rejected'
+func RejectDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		document.ApprovalStatus = "Rejected"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Document rejected successfully"})
+	}
+}
+
+func AssignDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+		var request struct {
+			TranslatorID uint `json:"translator_id"`
+		}
+		if err := c.BodyParser(&request); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+		}
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		if document.ApprovalStatus != "Approved" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Document must be approved before assigning a translator"})
+		}
+
+		document.TranslatorID = request.TranslatorID
+		document.Status = "In Progress"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Document assigned to translator"})
+	}
+}
+
+func GetTranslators(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var translators []models.User
+		if err := db.Where("role = ?", "translator").Find(&translators).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch translators"})
+		}
+
+		return c.JSON(translators)
+	}
+}

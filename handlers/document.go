@@ -98,34 +98,6 @@ func UploadDocument(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "File uploaded successfully", "data": doc})
 }
 
-// AssignDocument assigns a document to a translator
-func AssignDocument(c *fiber.Ctx) error {
-	documentID := c.Params("id")
-	var input struct {
-		TranslatorID uint `json:"translatorId"`
-	}
-	if err := c.BodyParser(&input); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cannot parse JSON"})
-	}
-
-	db, err := database.Connect()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
-	}
-
-	// Update the document with the assigned translator
-	var document models.Document
-	if err := db.First(&document, documentID).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
-	}
-
-	document.TranslatorID = input.TranslatorID
-	document.Status = "Assigned" // Optionally update status
-	db.Save(&document)
-
-	return c.JSON(fiber.Map{"message": "Document assigned successfully", "data": document})
-}
-
 // UpdateDocumentStatus allows a translator to accept or decline a document assignment
 func UpdateDocumentStatus(c *fiber.Ctx) error {
 	documentID := c.Params("id")

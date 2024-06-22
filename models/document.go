@@ -7,7 +7,7 @@ import (
 type Document struct {
 	gorm.Model
 	UserID             uint
-	TranslatorID       uint // Reference to the User model for the assigned translator
+	TranslatorID       uint // ID of the assigned translator
 	Title              string
 	Description        string
 	FilePath           string
@@ -17,4 +17,5 @@ type Document struct {
 	TranslatedFilePath string // Path to the translated document
 	Status             string // e.g., "Pending", "In Progress", "Completed"
 	PaymentConfirmed   bool   // Field to check if the payment is confirmed
+	ApprovalStatus     string // e.g., "Pending", "Approved", "Rejected"
 }
