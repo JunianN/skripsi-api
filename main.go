@@ -22,7 +22,10 @@ func main() {
 	})
 
 	// Middleware
-	app.Use(cors.New()) // Enable CORS
+	app.Use(cors.New(cors.Config{
+		ExposeHeaders: "Content-Disposition",
+	}))
+
 
 	db, err := database.Connect()
 	if err != nil {

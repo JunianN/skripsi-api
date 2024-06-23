@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"path/filepath"
 	"translation-app-backend/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -192,5 +193,30 @@ func RejectTranslatedDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		return c.JSON(fiber.Map{"message": "Translated document rejected"})
+	}
+}
+
+func DownloadPaymentReceipt(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		if document.PaymentReceiptFilePath == "" {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Payment receipt not found"})
+		}
+
+		filename := filepath.Base(document.PaymentReceiptFilePath)
+		c.Set("Content-Disposition", "attachment; filename=" + filename)
+
+		err := c.SendFile(document.PaymentReceiptFilePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send file"})
+		}
+
+		return nil
 	}
 }
