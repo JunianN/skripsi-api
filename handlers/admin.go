@@ -135,3 +135,62 @@ func GetTranslators(db *gorm.DB) fiber.Handler {
 		return c.JSON(translators)
 	}
 }
+
+func DownloadTranslatedFile(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		if document.TranslatedFilePath == "" {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Translated document not found"})
+		}
+
+		err := c.SendFile(document.TranslatedFilePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send file"})
+		}
+
+		return nil
+	}
+}
+
+func ApproveTranslatedDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		document.TranslatedApprovalStatus = "Approved"
+		document.Status = "Completed"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Translated document approved"})
+	}
+}
+
+func RejectTranslatedDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		document.TranslatedApprovalStatus = "Rejected"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Translated document rejected"})
+	}
+}
