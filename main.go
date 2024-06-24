@@ -3,11 +3,13 @@ package main
 import (
 	"log"
 	"translation-app-backend/database"
+	"translation-app-backend/handlers"
 	"translation-app-backend/router"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
+	"github.com/robfig/cron/v3"
 )
 
 func main() {
@@ -26,13 +28,21 @@ func main() {
 		ExposeHeaders: "Content-Disposition",
 	}))
 
-
 	db, err := database.Connect()
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
 
 	router.SetupRoutes(app, db)
+
+	// Set up the cron job
+	c := cron.New()
+	_, err2 := c.AddFunc("@hourly", handlers.CheckAndDeclineUnconfirmedDocuments)
+	if err2 != nil {
+		panic(err)
+	}
+	c.Start()
+	defer c.Stop()
 
 	log.Fatal(app.Listen(":3001"))
 }

@@ -60,6 +60,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	translators.Get("/assigned-documents", handlers.GetAssignedDocuments(db))
 	translators.Get("/documents/:id", handlers.GetAssignedDocument(db))
 	translators.Get("/documents/:id/download", handlers.DownloadAssignedDocument(db))
+	translators.Post("/documents/:id/approve", handlers.ApproveAssignedDocument(db))
+	translators.Post("/documents/:id/decline", handlers.DeclineAssignedDocument(db))
 	// translators.Patch("/documents/:id/status", handlers.UpdateDocumentStatus)
 	// translators.Get("/documents", handlers.GetTranslatorDocuments)
 	// translators.Post("/documents/:id/upload_translation", handlers.UploadTranslatedDocument)

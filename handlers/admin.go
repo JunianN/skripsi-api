@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"path/filepath"
+	"time"
 	"translation-app-backend/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -117,7 +118,9 @@ func AssignDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		document.TranslatorID = request.TranslatorID
-		document.Status = "In Progress"
+		document.TranslatorApprovalStatus = "Pending"
+		document.AssignmentTime = time.Now() // Set the assignment time
+		
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}

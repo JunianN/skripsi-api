@@ -60,3 +60,41 @@ func DownloadAssignedDocument(db *gorm.DB) fiber.Handler {
 		return nil
 	}
 }
+
+func ApproveAssignedDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ? AND translator_id = ?", documentID, userID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found or not assigned to you"})
+		}
+
+		document.TranslatorApprovalStatus = "Accepted"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Document accepted successfully"})
+	}
+}
+
+func DeclineAssignedDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ? AND translator_id = ?", documentID, userID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found or not assigned to you"})
+		}
+
+		document.TranslatorApprovalStatus = "Declined"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Document declined successfully"})
+	}
+}
