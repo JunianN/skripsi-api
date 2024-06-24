@@ -210,7 +210,7 @@ func DownloadPaymentReceipt(db *gorm.DB) fiber.Handler {
 		}
 
 		filename := filepath.Base(document.PaymentReceiptFilePath)
-		c.Set("Content-Disposition", "attachment; filename=" + filename)
+		c.Set("Content-Disposition", "attachment; filename="+filename)
 
 		err := c.SendFile(document.PaymentReceiptFilePath)
 		if err != nil {
@@ -218,5 +218,23 @@ func DownloadPaymentReceipt(db *gorm.DB) fiber.Handler {
 		}
 
 		return nil
+	}
+}
+
+func ApprovePayment(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ?", documentID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
+		}
+
+		document.PaymentConfirmed = true
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Payment approved successfully"})
 	}
 }
