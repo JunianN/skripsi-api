@@ -1,31 +1,62 @@
 package handlers
 
 import (
-    "github.com/gofiber/fiber/v2"
-    "translation-app-backend/database"
-    "translation-app-backend/models"
-    "log"
+	"path/filepath"
+	"translation-app-backend/models"
+
+	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
-func GetAssignedDocuments(c *fiber.Ctx) error {
-    userID, _ := c.Locals("userID").(uint)
-    userRole, _ := c.Locals("userRole").(string)
+func GetAssignedDocuments(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
 
-    if userRole != "translator" {
-        return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Access denied"})
-    }
+		var documents []models.Document
+		if err := db.Where("translator_id = ?", userID).Find(&documents).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch documents"})
+		}
 
-    db, err := database.Connect()
-    if err != nil {
-        log.Printf("Database connection failed: %v", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
-    }
+		return c.JSON(documents)
+	}
+}
 
-    var documents []models.Document
-    if err := db.Where("translator_id = ?", userID).Find(&documents).Error; err != nil {
-        log.Printf("Failed to fetch documents: %v", err)
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch documents"})
-    }
+func GetAssignedDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
+		documentID := c.Params("id")
 
-    return c.JSON(documents)
+		var document models.Document
+		if err := db.Where("id = ? AND translator_id = ?", documentID, userID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found or not assigned to you"})
+		}
+
+		return c.JSON(document)
+	}
+}
+
+func DownloadAssignedDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ? AND translator_id = ?", documentID, userID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found or not assigned to you"})
+		}
+
+		if document.FilePath == "" {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "File path not found"})
+		}
+
+		filename := filepath.Base(document.FilePath)
+		c.Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+
+		err := c.SendFile(document.FilePath)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send file"})
+		}
+
+		return nil
+	}
 }

@@ -19,5 +19,5 @@ type Document struct {
 	PaymentConfirmed         bool   // Field to check if the payment is confirmed
 	ApprovalStatus           string // e.g., "Pending", "Approved", "Rejected"
 	TranslatedApprovalStatus string // e.g., "Pending", "Approved", "Rejected"
-	PaymentReceiptFilePath string // Path to the uploaded payment receipt
+	PaymentReceiptFilePath   string // Path to the uploaded payment receipt
 }
