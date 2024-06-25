@@ -72,6 +72,7 @@ func ApproveAssignedDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		document.TranslatorApprovalStatus = "Accepted"
+		document.Status = "Translating"
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
@@ -96,5 +97,35 @@ func DeclineAssignedDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		return c.JSON(fiber.Map{"message": "Document declined successfully"})
+	}
+}
+
+func UploadTranslatedDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID")
+		documentID := c.Params("id")
+
+		var document models.Document
+		if err := db.Where("id = ? AND translator_id = ?", documentID, userID).First(&document).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found or not assigned to you"})
+		}
+
+		file, err := c.FormFile("translated_document")
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
+		}
+
+		savePath := filepath.Join("uploads","translated", file.Filename)
+		if err := c.SaveFile(file, savePath); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file"})
+		}
+
+		document.TranslatedFilePath = savePath
+		document.TranslatedApprovalStatus = "Pending"
+		if err := db.Save(&document).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Translated document uploaded successfully", "filePath": savePath})
 	}
 }

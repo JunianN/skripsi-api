@@ -154,42 +154,6 @@ func GetTranslatorDocuments(c *fiber.Ctx) error {
 	return c.JSON(documents)
 }
 
-// UploadTranslatedDocument allows translators to upload their translated documents
-func UploadTranslatedDocument(c *fiber.Ctx) error {
-	documentID := c.Params("id")
-	userID := c.Locals("userID")
-
-	// Retrieve the corresponding document
-	db, err := database.Connect()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed"})
-	}
-
-	var document models.Document
-	if err := db.Where("id = ? AND translator_id = ?", documentID, userID).First(&document).Error; err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found or not assigned to you"})
-	}
-
-	// Parse the form/file
-	file, err := c.FormFile("translatedFile")
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Could not process file upload"})
-	}
-
-	// Define path and save the file
-	savePath := filepath.Join("uploads", "translated", file.Filename) // Ensure the directory exists
-	if err := c.SaveFile(file, savePath); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file"})
-	}
-
-	// Update document record with translated file path and update status
-	document.TranslatedFilePath = savePath
-	document.Status = "Completed"
-	db.Save(&document)
-
-	return c.JSON(fiber.Map{"message": "Translated document uploaded successfully", "data": document})
-}
-
 // DownloadTranslatedDocument handles the downloading of the translated document
 func DownloadTranslatedDocument(c *fiber.Ctx) error {
 	userID := c.Locals("userID")

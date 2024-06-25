@@ -172,7 +172,7 @@ func ApproveTranslatedDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		document.TranslatedApprovalStatus = "Approved"
-		document.Status = "Completed"
+		document.Status = "Finished"
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
