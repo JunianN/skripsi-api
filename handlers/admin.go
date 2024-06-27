@@ -120,7 +120,7 @@ func AssignDocument(db *gorm.DB) fiber.Handler {
 		document.TranslatorID = request.TranslatorID
 		document.TranslatorApprovalStatus = "Pending"
 		document.AssignmentTime = time.Now() // Set the assignment time
-		
+
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
@@ -239,5 +239,20 @@ func ApprovePayment(db *gorm.DB) fiber.Handler {
 		}
 
 		return c.JSON(fiber.Map{"message": "Payment approved successfully"})
+	}
+}
+
+func GetTranslatorsByLanguage(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		sourceLanguage := c.Query("source")
+		targetLanguage := c.Query("target")
+
+		var translators []models.User
+		if err := db.Where("role = ? AND proficient_languages @> ARRAY[?] AND proficient_languages @> ARRAY[?]", "translator", sourceLanguage, targetLanguage).Find(&translators).Error; err != nil {
+			log.Printf("Failed to fetch translators: %v", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch translators"})
+		}
+
+		return c.JSON(translators)
 	}
 }

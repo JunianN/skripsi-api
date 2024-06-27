@@ -44,6 +44,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	admin.Get("/documents/:id/download", handlers.DownloadUserDocument(db))
 	admin.Post("/documents/:id/approve", handlers.ApproveDocument(db))
 	admin.Post("/documents/:id/reject", handlers.RejectDocument(db))
+	admin.Get("/translators/by-language", handlers.GetTranslatorsByLanguage(db))
 	admin.Post("/documents/:id/assign", handlers.AssignDocument(db))
 	admin.Get("/translators", handlers.GetTranslators(db))
 	admin.Get("/documents/:id/translated/download", handlers.DownloadTranslatedFile(db))
