@@ -7,8 +7,51 @@ import (
 	"translation-app-backend/models"
 
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+func RegisterAdmin(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var input struct {
+			Username string `json:"username"`
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}
+
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse JSON"})
+		}
+
+		if input.Email == "" || input.Password == "" || input.Username == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "please provide all required fields"})
+		}
+
+		var exists models.User
+		db.Where("email = ?", input.Email).First(&exists)
+		if exists.ID != 0 {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "email already in use"})
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), 10)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot hash password"})
+		}
+
+		user := models.User{
+			Username: input.Username,
+			Email:    input.Email,
+			Password: string(hashedPassword),
+			Role:     "admin",
+		}
+
+		if err := db.Create(&user).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot create admin"})
+		}
+
+		return c.JSON(fiber.Map{"message": "New Admin registered successfully"})
+	}
+}
 
 func GetAllDocuments(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {

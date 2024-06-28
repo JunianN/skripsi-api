@@ -13,31 +13,52 @@ import (
 
 func Register(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var user models.User
-		if err := c.BodyParser(&user); err != nil {
+		var input struct {
+			Username            string   `json:"username"`
+			Email               string   `json:"email"`
+			Password            string   `json:"password"`
+			Role                string   `json:"role"`
+			ProficientLanguages []string `json:"proficient_languages"`
+		}
+
+		if err := c.BodyParser(&input); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse JSON"})
 
 		}
 
+		if input.Role == "admin" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Cannot register as admin"})
+		}
+
 		// Validate inputs
-		if user.Email == "" || user.Password == "" || user.Username == "" {
+		if input.Email == "" || input.Password == "" || input.Username == "" || input.Role == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "please provide all required fields"})
 		}
 
 		// Check for existing user
 		var exists models.User
-		db.Where("email = ?", user.Email).First(&exists)
+		db.Where("email = ?", input.Email).First(&exists)
 		if exists.ID != 0 {
 			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "email already in use"})
 		}
 
 		// Hash the password
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 12)
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), 12)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not hash password"})
 		}
-		user.Password = string(hashedPassword)
 
+		user := models.User{
+			Username: input.Username,
+			Email:    input.Email,
+			Password: string(hashedPassword),
+			Role:     input.Role,
+		}
+
+		if input.Role == "translator" {
+			user.ProficientLanguages = input.ProficientLanguages
+		}
+		
 		// Save the user to the database
 		result := db.Create(&user)
 		if result.Error != nil {

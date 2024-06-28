@@ -14,7 +14,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	})
 
 	// auth routes
-	app.Post("/register", handlers.Register(db))
+	app.Post("api/register", handlers.Register(db))
 	app.Post("api/login", handlers.Login(db))
 
 	// user routes
@@ -39,6 +39,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	admin.Use(middleware.Authenticated())
 	admin.Use(middleware.AdminRequired())
 
+	admin.Post("/register", handlers.RegisterAdmin(db))
 	admin.Get("/documents", handlers.GetAllDocuments(db))
 	admin.Get("/documents/:id", handlers.GetDocumentDetails(db))
 	admin.Get("/documents/:id/download", handlers.DownloadUserDocument(db))
