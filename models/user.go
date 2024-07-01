@@ -12,7 +12,8 @@ type User struct {
 	Password            string
 	Role                string         // e.g., "admin", "translator", "user"
 	ProficientLanguages pq.StringArray `gorm:"type:text[]"`
-	Ratings             []Rating       `gorm:"foreignKey:UserID"`
+	Ratings             []Rating       `gorm:"foreignKey:TranslatorID"`
+	Status              string         // e.g., "available", "working"
 }
 
 // LoginInput represents the required fields for login

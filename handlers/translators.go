@@ -77,6 +77,16 @@ func ApproveAssignedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
 
+		var translator models.User
+		if err := db.First(&translator, userID).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Translator not found"})
+		}
+
+		translator.Status = "Working"
+		if err := db.Save(&translator).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update translator status"})
+		}
+		
 		return c.JSON(fiber.Map{"message": "Document accepted successfully"})
 	}
 }
@@ -115,7 +125,7 @@ func UploadTranslatedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
 		}
 
-		savePath := filepath.Join("uploads","translated", file.Filename)
+		savePath := filepath.Join("uploads", "translated", file.Filename)
 		if err := c.SaveFile(file, savePath); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file"})
 		}

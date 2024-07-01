@@ -11,6 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type TranslatorWithRating struct {
+	models.User
+	AverageRating float64 `json:"average_rating"`
+}
+
 func RegisterAdmin(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var input struct {
@@ -220,6 +225,21 @@ func ApproveTranslatedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
 
+		var count int64
+		db.Model(&models.Document{}).Where("translator_id = ? AND status = ?", document.TranslatorID, "Translating").Count(&count)
+
+		if count == 0 {
+			var translator models.User
+			if err := db.First(&translator, document.TranslatorID).Error; err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Translator not found"})
+			}
+
+			translator.Status = "Available"
+			if err := db.Save(&translator).Error; err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update translator status"})
+			}
+		}
+
 		return c.JSON(fiber.Map{"message": "Translated document approved"})
 	}
 }
@@ -290,9 +310,15 @@ func GetTranslatorsByLanguage(db *gorm.DB) fiber.Handler {
 		sourceLanguage := c.Query("source")
 		targetLanguage := c.Query("target")
 
-		var translators []models.User
-		if err := db.Where("role = ? AND proficient_languages @> ARRAY[?] AND proficient_languages @> ARRAY[?]", "translator", sourceLanguage, targetLanguage).Find(&translators).Error; err != nil {
-			log.Printf("Failed to fetch translators: %v", err)
+		var translators []TranslatorWithRating
+		if err := db.Raw(`
+        SELECT users.*, COALESCE(AVG(ratings.rating), 0) as average_rating
+        FROM users
+        LEFT JOIN ratings ON users.id = ratings.translator_id
+        WHERE users.role = ? AND ARRAY[?] <@ users.proficient_languages AND ARRAY[?] <@ users.proficient_languages
+        GROUP BY users.id
+        ORDER BY average_rating DESC, users.status ASC`,
+			"translator", sourceLanguage, targetLanguage).Scan(&translators).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch translators"})
 		}
 
