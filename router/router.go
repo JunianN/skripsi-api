@@ -28,6 +28,10 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	api.Post("/documents/:id/discussions", middleware.Authenticated(), handlers.PostDiscussion)
 	api.Get("/documents/:id/download", middleware.Authenticated(), handlers.DownloadTranslatedDocument)
 	api.Post("/documents/:id/upload-receipt", handlers.UploadPaymentReceipt(db))
+	api.Post("/ratings", handlers.SubmitRating(db))
+	api.Get("/:id/average-rating", handlers.GetTranslatorAverageRating(db))
+	api.Get("/documents/:id/rating", handlers.GetRatings(db))
+
 
 	// api.Get("/translations", handlers.ListTranslations(db))
 	// api.Post("/translations", handlers.AddTranslation(db))
