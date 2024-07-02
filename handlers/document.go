@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"path/filepath"
+	"strconv"
 	"translation-app-backend/database"
 	"translation-app-backend/models"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 // GetDocument retrieves the details of a specific document by ID
@@ -45,57 +47,64 @@ func GetDocuments(c *fiber.Ctx) error {
 }
 
 // UploadDocument handles the uploading of files along with additional data
-func UploadDocument(c *fiber.Ctx) error {
-	// Check if userID is set in locals (set by middleware)
-	userID := c.Locals("userID").(float64)
+func UploadDocument(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		// Check if userID is set in locals (set by middleware)
+		userID := c.Locals("userID").(float64)
 
-	// Parse the form
-	form, err := c.MultipartForm()
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to parse form: " + err.Error()})
+		// Parse the form
+		form, err := c.MultipartForm()
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to parse form: " + err.Error()})
+		}
+
+		// Extract file from the posted form
+		files := form.File["document"]
+		if len(files) == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
+		}
+
+		file := files[0]
+		savePath := filepath.Join("uploads", file.Filename)
+
+		// Save the file to the server
+		if err := c.SaveFile(file, savePath); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file: " + err.Error()})
+		}
+
+		// Extract other form fields
+		title := form.Value["title"][0]
+		description := form.Value["description"][0]
+		sourceLanguage := form.Value["sourceLanguage"][0]
+		targetLanguage := form.Value["targetLanguage"][0]
+		numberOfPages := form.Value["numberOfPages"][0]
+
+		numberOfPagesInt, err := strconv.Atoi(numberOfPages)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to convert string: " + err.Error()})
+		}
+
+		if numberOfPagesInt <= 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Number of pages must be a positive integer"})
+		}
+
+		doc := models.Document{
+			UserID:         uint(userID),
+			Title:          title,
+			Description:    description,
+			FilePath:       savePath,
+			SourceLanguage: sourceLanguage,
+			TargetLanguage: targetLanguage,
+			NumberOfPages:  numberOfPages,
+			Status:         "Pending", // Default status set when uploading a new document
+		}
+
+		if err := db.Create(&doc).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot create document" + err.Error()})
+		}
+
+		return c.JSON(fiber.Map{"message": "File uploaded successfully", "data": doc})
 	}
-
-	// Extract file from the posted form
-	files := form.File["document"]
-	if len(files) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
-	}
-
-	file := files[0]
-	savePath := filepath.Join("uploads", file.Filename)
-
-	// Save the file to the server
-	if err := c.SaveFile(file, savePath); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file: " + err.Error()})
-	}
-
-	// Extract other form fields
-	title := form.Value["title"][0]
-	description := form.Value["description"][0]
-	sourceLanguage := form.Value["sourceLanguage"][0]
-	targetLanguage := form.Value["targetLanguage"][0]
-	numberOfPages := form.Value["numberOfPages"][0]
-
-	// Store file and metadata in the database
-	db, err := database.Connect()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed: " + err.Error()})
-	}
-
-	doc := models.Document{
-		UserID:         uint(userID),
-		Title:          title,
-		Description:    description,
-		FilePath:       savePath,
-		SourceLanguage: sourceLanguage,
-		TargetLanguage: targetLanguage,
-		NumberOfPages:  numberOfPages,
-		Status:         "Pending", // Default status set when uploading a new document
-	}
-
-	db.Create(&doc)
-
-	return c.JSON(fiber.Map{"message": "File uploaded successfully", "data": doc})
 }
 
 // UpdateDocumentStatus allows a translator to accept or decline a document assignment

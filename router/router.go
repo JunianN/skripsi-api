@@ -21,7 +21,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	api := app.Group("/api")
 	api.Use(middleware.Authenticated())
 
-	api.Post("/upload", middleware.Authenticated(), handlers.UploadDocument)
+	api.Post("/upload", middleware.Authenticated(), handlers.UploadDocument(db))
 	api.Get("/documents", middleware.Authenticated(), handlers.GetDocuments)
 	api.Get("/documents/:id", middleware.Authenticated(), handlers.GetDocument)
 	api.Get("/documents/:id/discussions", middleware.Authenticated(), handlers.GetDiscussions)
