@@ -16,6 +16,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	// auth routes
 	app.Post("api/register", handlers.Register(db))
 	app.Post("api/login", handlers.Login(db))
+	app.Post("api/mail", handlers.Mail(db))
 
 	// user routes
 	api := app.Group("/api")
@@ -57,6 +58,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	admin.Post("/documents/:id/translated/reject", handlers.RejectTranslatedDocument(db))
 	admin.Get("/documents/:id/payment-receipt", handlers.DownloadPaymentReceipt(db))
 	admin.Post("/documents/:id/payment-approve", handlers.ApprovePayment(db))
+	admin.Get("/mails", handlers.GetMailSubmissions(db))
 
 	// Group routes for translators
 	translators := app.Group("/api/translator")
