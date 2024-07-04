@@ -32,6 +32,8 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	api.Post("/ratings", handlers.SubmitRating(db))
 	api.Get("/:id/average-rating", handlers.GetTranslatorAverageRating(db))
 	api.Get("/documents/:id/rating", handlers.GetRatings(db))
+	api.Get("/notifications", handlers.FetchNotifications(db))
+	api.Post("notifications/read", handlers.MarkNotificationsAsRead(db))
 
 
 	// api.Get("/translations", handlers.ListTranslations(db))

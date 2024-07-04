@@ -123,6 +123,11 @@ func ApproveDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
 
+		message := "Your document has been approved."
+		if err := CreateNotification(document.UserID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		}
+
 		return c.JSON(fiber.Map{"message": "Document approved successfully"})
 	}
 }
@@ -223,6 +228,11 @@ func ApproveTranslatedDocument(db *gorm.DB) fiber.Handler {
 		document.Status = "Finished"
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		message := "Your document has been translated."
+		if err := CreateNotification(document.UserID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Can't create notification"})
 		}
 
 		var count int64
