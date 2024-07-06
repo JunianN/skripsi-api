@@ -86,6 +86,11 @@ func ApproveAssignedDocument(db *gorm.DB) fiber.Handler {
 		if err := db.Save(&translator).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update translator status"})
 		}
+
+		message := "A translator has accepted to translate a document."
+		if err := CreateNotification(2, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		}
 		
 		return c.JSON(fiber.Map{"message": "Document accepted successfully"})
 	}

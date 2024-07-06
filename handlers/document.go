@@ -29,21 +29,18 @@ func GetDocument(c *fiber.Ctx) error {
 }
 
 // GetDocuments returns a list of documents for the authenticated user
-func GetDocuments(c *fiber.Ctx) error {
-	userID := c.Locals("userID") // Assuming userID is stored in Locals after authentication
+func GetDocuments(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID") // Assuming userID is stored in Locals after authentication
 
-	db, err := database.Connect()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Database connection failed: " + err.Error()})
+		var documents []models.Document
+		result := db.Where("user_id = ?", userID).Order("created_at desc").Find(&documents)
+		if result.Error != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve documents"})
+		}
+
+		return c.JSON(documents)
 	}
-
-	var documents []models.Document
-	result := db.Where("user_id = ?", userID).Find(&documents)
-	if result.Error != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve documents"})
-	}
-
-	return c.JSON(documents)
 }
 
 // UploadDocument handles the uploading of files along with additional data

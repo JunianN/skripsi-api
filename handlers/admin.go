@@ -62,7 +62,7 @@ func GetAllDocuments(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 
 		var documents []models.Document
-		if err := db.Find(&documents).Error; err != nil {
+		if err := db.Order("created_at desc").Find(&documents).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch documents"})
 		}
 
@@ -147,6 +147,11 @@ func RejectDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
 
+		message := "Your document has been rejected."
+		if err := CreateNotification(document.UserID, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		}
+
 		return c.JSON(fiber.Map{"message": "Document rejected successfully"})
 	}
 }
@@ -176,6 +181,11 @@ func AssignDocument(db *gorm.DB) fiber.Handler {
 
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		message := "A document has been assigned to you."
+		if err := CreateNotification(document.TranslatorID, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 
 		return c.JSON(fiber.Map{"message": "Document assigned to translator"})
