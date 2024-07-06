@@ -20,9 +20,10 @@ func FetchNotifications(db *gorm.DB) fiber.Handler {
 	}
 }
 
-func CreateNotification(userID uint, message string, db *gorm.DB) error {
+func CreateNotification(userID uint, documentID uint, message string, db *gorm.DB) error {
 		notification := models.Notification{
 			UserID:  userID,
+			DocumentID: documentID,
 			Message: message,
 		}
 

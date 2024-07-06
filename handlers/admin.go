@@ -124,7 +124,7 @@ func ApproveDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		message := "Your document has been approved."
-		if err := CreateNotification(document.UserID, message, db); err != nil {
+		if err := CreateNotification(document.UserID, document.ID, message, db); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 
@@ -231,7 +231,7 @@ func ApproveTranslatedDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		message := "Your document has been translated."
-		if err := CreateNotification(document.UserID, message, db); err != nil {
+		if err := CreateNotification(document.UserID, document.ID, message, db); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Can't create notification"})
 		}
 
