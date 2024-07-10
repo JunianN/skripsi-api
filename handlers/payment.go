@@ -44,6 +44,11 @@ func UploadPaymentReceipt(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
 
+		message := "User has uploaded the payment receipt."
+		if err := CreateNotification(2, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		}
+
 		return c.JSON(fiber.Map{"message": "Payment receipt uploaded successfully"})
 	}
 }

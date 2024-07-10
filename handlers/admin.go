@@ -260,6 +260,11 @@ func ApproveTranslatedDocument(db *gorm.DB) fiber.Handler {
 			}
 		}
 
+		message2 := "Your translation has been approved by Admin."
+		if err := CreateNotification(document.TranslatorID, document.ID, message2, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		}
+
 		return c.JSON(fiber.Map{"message": "Translated document approved"})
 	}
 }
@@ -276,6 +281,11 @@ func RejectTranslatedDocument(db *gorm.DB) fiber.Handler {
 		document.TranslatedApprovalStatus = "Rejected"
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		message := "Your translation has been rejected by Admin."
+		if err := CreateNotification(document.TranslatorID, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 
 		return c.JSON(fiber.Map{"message": "Translated document rejected"})
@@ -319,6 +329,11 @@ func ApprovePayment(db *gorm.DB) fiber.Handler {
 		document.PaymentConfirmed = true
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		message := "Your payment has been approved by Admin."
+		if err := CreateNotification(document.UserID, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 
 		return c.JSON(fiber.Map{"message": "Payment approved successfully"})

@@ -87,8 +87,14 @@ func ApproveAssignedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update translator status"})
 		}
 
-		message := "A translator has accepted to translate a document."
-		if err := CreateNotification(2, document.ID, message, db); err != nil {
+		
+		message := "Your document is being translated."
+		if err := CreateNotification(document.UserID, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
+		}
+
+		message2 := "A translator has accepted to translate a document."
+		if err := CreateNotification(2, document.ID, message2, db); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 		
@@ -109,6 +115,11 @@ func DeclineAssignedDocument(db *gorm.DB) fiber.Handler {
 		document.TranslatorApprovalStatus = "Declined"
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		message2 := "A translator has refused to translate a document."
+		if err := CreateNotification(2, document.ID, message2, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 
 		return c.JSON(fiber.Map{"message": "Document declined successfully"})
@@ -139,6 +150,11 @@ func UploadTranslatedDocument(db *gorm.DB) fiber.Handler {
 		document.TranslatedApprovalStatus = "Pending"
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
+		}
+
+		message := "A translator has submited translated document."
+		if err := CreateNotification(2, document.ID, message, db); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 
 		return c.JSON(fiber.Map{"message": "Translated document uploaded successfully", "filePath": savePath})
