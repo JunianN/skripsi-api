@@ -99,7 +99,7 @@ func Login(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not generate token"})
 		}
 
-		return c.JSON(fiber.Map{"message": "login successful", "token": token, "userRole": user.Role, "username": user.Username})
+		return c.JSON(fiber.Map{"message": "login successful", "token": token})
 	}
 }
 
@@ -108,6 +108,7 @@ func generateJWT(user models.User) (string, error) {
 		"user_id":  user.ID,
 		"email":    user.Email,
 		"userRole": user.Role,
+		"username": user.Username,
 		"exp":      time.Now().Add(time.Hour * 72).Unix(),
 	})
 	token, err := claims.SignedString([]byte(os.Getenv("SECRET"))) // Use a secret from env variable in production
