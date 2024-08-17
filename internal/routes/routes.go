@@ -1,8 +1,8 @@
-package router
+package routes
 
 import (
-	"translation-app-backend/handlers"
-	"translation-app-backend/middleware"
+	"translation-app-backend/internal/handlers"
+	"translation-app-backend/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -24,22 +24,16 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 
 	api.Post("/upload", middleware.Authenticated(), handlers.UploadDocument(db))
 	api.Get("/documents", middleware.Authenticated(), handlers.GetDocuments(db))
-	api.Get("/documents/:id", middleware.Authenticated(), handlers.GetDocument)
-	api.Get("/documents/:id/discussions", middleware.Authenticated(), handlers.GetDiscussions)
-	api.Post("/documents/:id/discussions", middleware.Authenticated(), handlers.PostDiscussion)
-	api.Get("/documents/:id/download", middleware.Authenticated(), handlers.DownloadTranslatedDocument)
+	api.Get("/documents/:id", middleware.Authenticated(), handlers.GetDocument(db))
+	api.Get("/documents/:id/discussions", middleware.Authenticated(), handlers.GetDiscussions(db))
+	api.Post("/documents/:id/discussions", middleware.Authenticated(), handlers.PostDiscussion(db))
+	api.Get("/documents/:id/download", middleware.Authenticated(), handlers.DownloadTranslatedDocument(db))
 	api.Post("/documents/:id/upload-receipt", handlers.UploadPaymentReceipt(db))
 	api.Post("/ratings", handlers.SubmitRating(db))
 	api.Get("/:id/average-rating", handlers.GetTranslatorAverageRating(db))
 	api.Get("/documents/:id/rating", handlers.GetRatings(db))
 	api.Get("/notifications", handlers.FetchNotifications(db))
 	api.Post("notifications/read", handlers.MarkNotificationsAsRead(db))
-
-
-	// api.Get("/translations", handlers.ListTranslations(db))
-	// api.Post("/translations", handlers.AddTranslation(db))
-
-	// api.Post("/notifications", handlers.SendNotification(db))
 
 	// Admin routes
 	admin := app.Group("/api/admin")
@@ -69,9 +63,9 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 
 	translators.Get("/assigned-documents", handlers.GetAssignedDocuments(db))
 	translators.Get("/documents/:id", handlers.GetAssignedDocument(db))
-	translators.Get("/documents/:id/download", handlers.DownloadAssignedDocument(db))
 	translators.Post("/documents/:id/approve", handlers.ApproveAssignedDocument(db))
 	translators.Post("/documents/:id/decline", handlers.DeclineAssignedDocument(db))
+	translators.Get("/documents/:id/download", handlers.DownloadAssignedDocument(db))
 	translators.Post("/documents/:id/upload", handlers.UploadTranslatedDocument(db))
 	// translators.Patch("/documents/:id/status", handlers.UpdateDocumentStatus)
 	// translators.Get("/documents", handlers.GetTranslatorDocuments)

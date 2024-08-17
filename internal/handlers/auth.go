@@ -3,7 +3,7 @@ package handlers
 import (
 	"os"
 	"time"
-	"translation-app-backend/models"
+	"translation-app-backend/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"

@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
-	"translation-app-backend/database"
-	"translation-app-backend/handlers"
-	"translation-app-backend/router"
+	"translation-app-backend/internal/database"
+	"translation-app-backend/internal/handlers"
+	"translation-app-backend/internal/routes"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -33,7 +33,7 @@ func main() {
 		log.Fatal("Failed to connect to database: ", err)
 	}
 
-	router.SetupRoutes(app, db)
+	routes.SetupRoutes(app, db)
 
 	// Set up the cron job
 	c := cron.New()

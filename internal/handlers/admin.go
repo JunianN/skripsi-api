@@ -4,7 +4,7 @@ import (
 	"log"
 	"path/filepath"
 	"time"
-	"translation-app-backend/models"
+	"translation-app-backend/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"

@@ -3,8 +3,8 @@ package handlers
 import (
 	"log"
 	"time"
-	"translation-app-backend/database"
-	"translation-app-backend/models"
+	"translation-app-backend/internal/database"
+	"translation-app-backend/internal/models"
 )
 
 func CheckAndDeclineUnconfirmedDocuments() {
@@ -13,6 +13,7 @@ func CheckAndDeclineUnconfirmedDocuments() {
 		log.Printf("Database connection failed: %v", err)
 		return
 	}
+	
 	var documents []models.Document
 	oneDayAgo := time.Now().Add(-24 * time.Hour)
 

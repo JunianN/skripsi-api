@@ -8,12 +8,12 @@ import (
 type User struct {
 	gorm.Model
 	Username            string
-	Email               string `gorm:"unique"`
+	Email               string 			`gorm:"unique"`
 	Password            string
-	Role                string         // e.g., "admin", "translator", "user"
+	Role                string         
 	ProficientLanguages pq.StringArray `gorm:"type:text[]"`
 	Ratings             []Rating       `gorm:"foreignKey:TranslatorID"`
-	Status              string         // e.g., "available", "working"
+	Status              string         
 }
 
 // LoginInput represents the required fields for login

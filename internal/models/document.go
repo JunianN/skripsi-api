@@ -15,7 +15,7 @@ type Document struct {
 	FilePath                 string
 	SourceLanguage           string
 	TargetLanguage           string
-	NumberOfPages            string
+	NumberOfPages            int
 	TranslatedFilePath       string    // Path to the translated document
 	Status                   string    // e.g., "Pending", "In Progress", "Completed"
 	PaymentConfirmed         bool      // Field to check if the payment is confirmed

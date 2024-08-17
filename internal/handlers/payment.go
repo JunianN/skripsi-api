@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"path/filepath"
-	"translation-app-backend/models"
+	"translation-app-backend/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
