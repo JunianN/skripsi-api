@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"path/filepath"
 	"strconv"
 	"translation-app-backend/internal/models"
@@ -58,7 +59,20 @@ func UploadDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		file := files[0]
-		savePath := filepath.Join("uploads", file.Filename)
+		// Use filepath.Abs to get the absolute path of the current working directory
+		rootDir, err := filepath.Abs(".")
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get root directory: " + err.Error()})
+		}
+		
+		// Join the root directory with the uploads folder and filename
+		savePath := filepath.Join(rootDir, "uploads", file.Filename)
+
+		// Ensure the uploads directory exists
+		uploadsDir := filepath.Dir(savePath)
+		if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create uploads directory: " + err.Error()})
+		}
 
 		// Save the file to the server
 		if err := c.SaveFile(file, savePath); err != nil {
