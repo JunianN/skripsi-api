@@ -8,7 +8,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	// "github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 )
 
@@ -25,7 +24,7 @@ func main() {
 
 	// Middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "https://doc-translation.vercel.app",
+		AllowOrigins: "http://localhost:3000",
 		ExposeHeaders: "Content-Disposition",
 	}))
 

@@ -99,7 +99,7 @@ func Login(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "could not generate token"})
 		}
 
-		return c.JSON(fiber.Map{"message": "login successful", "token": token})
+		return c.JSON(fiber.Map{"message": "login successful", "token": token, "userRole": user.Role})
 	}
 }
 
