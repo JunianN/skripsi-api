@@ -57,6 +57,7 @@ func Register(db *gorm.DB) fiber.Handler {
 
 		if input.Role == "translator" {
 			user.ProficientLanguages = input.ProficientLanguages
+			user.Status = "Available"
 		}
 		
 		// Save the user to the database
