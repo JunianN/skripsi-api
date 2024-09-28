@@ -17,7 +17,7 @@ func Connect() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.Exec("DEALLOCATE ALL")
+
 	db.AutoMigrate(&models.User{}, &models.Notification{}, &models.Document{}, &models.Discussion{}, &models.Rating{}, &models.Mail{})
 	return db, nil
 }
