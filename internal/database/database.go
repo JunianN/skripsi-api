@@ -11,8 +11,15 @@ import (
 func Connect() (*gorm.DB, error) {
 	DB_URL := os.Getenv("DB_URL")
 
-	db, err := gorm.Open(postgres.Open(DB_URL), &gorm.Config{
-		PrepareStmt: false,
+	// Create a new PostgreSQL driver configuration
+	pgConfig := postgres.Config{
+		DSN: DB_URL,
+		PreferSimpleProtocol: true, // Disable implicit prepared statement usage
+	}
+
+	// Open the database connection with the modified configuration
+	db, err := gorm.Open(postgres.New(pgConfig), &gorm.Config{
+		PrepareStmt: false, // Disable prepared statement cache
 	})
 	if err != nil {
 		return nil, err
