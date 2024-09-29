@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"path/filepath"
 	"translation-app-backend/internal/models"
 
@@ -141,9 +142,23 @@ func UploadTranslatedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
 		}
 
-		savePath := filepath.Join("uploads", "translated", file.Filename)
+		rootDir, err := filepath.Abs(".")
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get root directory: " + err.Error()})
+		}
+		
+		// Join the root directory with the uploads folder and filename
+		savePath := filepath.Join(rootDir, "uploads", "translated", file.Filename)
+
+		// Ensure the uploads directory exists
+		uploadsDir := filepath.Dir(savePath)
+		if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create uploads directory: " + err.Error()})
+		}
+
+		// Save the file to the server
 		if err := c.SaveFile(file, savePath); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file"})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file: " + err.Error()})
 		}
 
 		document.TranslatedFilePath = savePath
