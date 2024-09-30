@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"log"
-	"path/filepath"
 	"time"
 	"translation-app-backend/internal/models"
 
@@ -301,19 +300,16 @@ func DownloadPaymentReceipt(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
 		}
 
-		if document.PaymentReceiptFilePath == "" {
+		if len(document.PaymentReceiptContent) == 0 {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Payment receipt not found"})
 		}
 
-		filename := filepath.Base(document.PaymentReceiptFilePath)
-		c.Set("Content-Disposition", "attachment; filename="+filename)
+		// Set the appropriate headers
+		c.Set("Content-Disposition", "attachment; filename="+document.PaymentReceiptFileName)
+		c.Set("Content-Type", "application/octet-stream")
 
-		err := c.SendFile(document.PaymentReceiptFilePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send file"})
-		}
-
-		return nil
+		// Send the file content directly from the database
+		return c.Send(document.PaymentReceiptContent)
 	}
 }
 
