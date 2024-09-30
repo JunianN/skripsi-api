@@ -23,5 +23,8 @@ type Document struct {
 	TranslatedApprovalStatus string    // e.g., "Pending", "Approved", "Rejected"
 	TranslatorApprovalStatus string    // e.g., "Pending", "Accepted", "Declined"
 	PaymentReceiptFilePath   string    // Path to the uploaded payment receipt
+	PaymentReceiptContent []byte
+	PaymentReceiptFileName string
+
 	AssignmentTime           time.Time // Time when the document was assigned to the translator
 }

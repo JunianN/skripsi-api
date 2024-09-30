@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"path/filepath"
+	"io"
 	"translation-app-backend/internal/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,15 +31,23 @@ func UploadPaymentReceipt(db *gorm.DB) fiber.Handler {
 		}
 
 		file := files[0]
-		savePath := filepath.Join("uploads", "receipts", file.Filename)
 
-		// Save the file to the server
-		if err := c.SaveFile(file, savePath); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file: " + err.Error()})
+		// Read the file content
+		fileContent, err := file.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open file: " + err.Error()})
+		}
+		defer fileContent.Close()
+
+		// Read the file data
+		fileData, err := io.ReadAll(fileContent)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read file: " + err.Error()})
 		}
 
-		// Store file path in the database
-		document.PaymentReceiptFilePath = savePath
+		// Store file content in the database
+		document.PaymentReceiptContent = fileData
+		document.PaymentReceiptFileName = file.Filename
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
 		}
