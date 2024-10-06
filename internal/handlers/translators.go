@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"os"
-	"path/filepath"
+	"io"
 	"translation-app-backend/internal/models"
 
 	"github.com/gofiber/fiber/v2"
@@ -46,19 +45,14 @@ func DownloadAssignedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found or not assigned to you"})
 		}
 
-		if document.FilePath == "" {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "File path not found"})
+		if document.FileContent == nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document file not found"})
 		}
 
-		filename := filepath.Base(document.FilePath)
-		c.Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
+		c.Set("Content-Disposition", "attachment; filename="+document.FileName)
+		c.Set("Content-Type", "application/octet-stream")
 
-		err := c.SendFile(document.FilePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send file"})
-		}
-
-		return nil
+		return c.Send(document.FileContent)
 	}
 }
 
@@ -142,26 +136,20 @@ func UploadTranslatedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
 		}
 
-		rootDir, err := filepath.Abs(".")
+		fileContent, err := file.Open()
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get root directory: " + err.Error()})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open file: " + err.Error()})
 		}
-		
-		// Join the root directory with the uploads folder and filename
-		savePath := filepath.Join(rootDir, "uploads", "translated", file.Filename)
+		defer fileContent.Close()
 
-		// Ensure the uploads directory exists
-		uploadsDir := filepath.Dir(savePath)
-		if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create uploads directory: " + err.Error()})
+		/// Read the file data
+		fileData, err := io.ReadAll(fileContent)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read file: " + err.Error()})
 		}
 
-		// Save the file to the server
-		if err := c.SaveFile(file, savePath); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file: " + err.Error()})
-		}
-
-		document.TranslatedFilePath = savePath
+		document.TranslatedFileContent = fileData
+		document.TranslatedFileName = file.Filename
 		document.TranslatedApprovalStatus = "Pending"
 		if err := db.Save(&document).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update document"})
@@ -172,6 +160,6 @@ func UploadTranslatedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err})
 		}
 
-		return c.JSON(fiber.Map{"message": "Translated document uploaded successfully", "filePath": savePath})
+		return c.JSON(fiber.Map{"message": "Translated document uploaded successfully"})
 	}
 }

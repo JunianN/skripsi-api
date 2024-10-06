@@ -92,18 +92,16 @@ func DownloadUserDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
 		}
 
-		if document.FilePath == "" {
+		if document.FileContent == nil {
 			log.Printf("Document file not found for document ID: %v", documentID)
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document file not found"})
 		}
 
-		err := c.SendFile(document.FilePath)
-		if err != nil {
-			log.Printf("Error sending file: %v", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send file"})
-		}
+		// Set the appropriate headers
+		c.Set("Content-Disposition", "attachment; filename="+document.FileName)
+		c.Set("Content-Type", "application/octet-stream")
 
-		return nil
+		return c.Send(document.FileContent)
 	}
 }
 
@@ -211,16 +209,15 @@ func DownloadTranslatedFile(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
 		}
 
-		if document.TranslatedFilePath == "" {
+		if document.FileContent == nil {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Translated document not found"})
 		}
 
-		err := c.SendFile(document.TranslatedFilePath)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to send file"})
-		}
+		// Set the appropriate headers
+		c.Set("Content-Disposition", "attachment; filename="+document.TranslatedFileName)
+		c.Set("Content-Type", "application/octet-stream")
 
-		return nil
+		return c.Send(document.TranslatedFileContent)
 	}
 }
 
@@ -300,7 +297,7 @@ func DownloadPaymentReceipt(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Document not found"})
 		}
 
-		if len(document.PaymentReceiptContent) == 0 {
+		if document.PaymentReceiptContent == nil {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Payment receipt not found"})
 		}
 

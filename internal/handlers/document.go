@@ -1,8 +1,7 @@
 package handlers
 
 import (
-	"os"
-	"path/filepath"
+	"io"
 	"strconv"
 	"translation-app-backend/internal/models"
 
@@ -59,24 +58,17 @@ func UploadDocument(db *gorm.DB) fiber.Handler {
 		}
 
 		file := files[0]
-		// Use filepath.Abs to get the absolute path of the current working directory
-		rootDir, err := filepath.Abs(".")
+		// Read the file content
+		fileContent, err := file.Open()
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get root directory: " + err.Error()})
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open file: " + err.Error()})
 		}
+		defer fileContent.Close()
 		
-		// Join the root directory with the uploads folder and filename
-		savePath := filepath.Join(rootDir, "uploads", file.Filename)
-
-		// Ensure the uploads directory exists
-		uploadsDir := filepath.Dir(savePath)
-		if err := os.MkdirAll(uploadsDir, os.ModePerm); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create uploads directory: " + err.Error()})
-		}
-
-		// Save the file to the server
-		if err := c.SaveFile(file, savePath); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to save file: " + err.Error()})
+		/// Read the file data
+		fileData, err := io.ReadAll(fileContent)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to read file: " + err.Error()})
 		}
 
 		// Extract other form fields
@@ -99,7 +91,8 @@ func UploadDocument(db *gorm.DB) fiber.Handler {
 			UserID:         uint(userID),
 			Title:          title,
 			Description:    description,
-			FilePath:       savePath,
+			FileContent:    fileData,
+			FileName:       file.Filename,
 			SourceLanguage: sourceLanguage,
 			TargetLanguage: targetLanguage,
 			NumberOfPages:  numberOfPagesInt,
@@ -179,6 +172,10 @@ func DownloadTranslatedDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Payment not confirmed"})
 		}
 
-		return c.SendFile(document.TranslatedFilePath)
+		// Set the appropriate headers
+		c.Set("Content-Disposition", "attachment; filename="+document.TranslatedFileName)
+		c.Set("Content-Type", "application/octet-stream")
+
+		return c.Send(document.TranslatedFileContent)
 	}
 }
