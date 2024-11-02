@@ -24,7 +24,7 @@ func main() {
 
 	// Middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "https://doc-translation.vercel.app, http://localhost:3000",
+		AllowOrigins: "https://doc-translation.vercel.app",
 		ExposeHeaders: "Content-Disposition",
 	}))
 
