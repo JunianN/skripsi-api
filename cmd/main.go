@@ -24,8 +24,9 @@ func main() {
 
 	// Middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "https://doc-translation.vercel.app",
-		ExposeHeaders: "Content-Disposition",
+		AllowOrigins:     "https://doc-translation.vercel.app, http://localhost:3000",
+		ExposeHeaders:    "Content-Disposition",
+		AllowCredentials: true,
 	}))
 
 	db, err := database.Connect()
