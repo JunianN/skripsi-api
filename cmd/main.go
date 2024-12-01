@@ -38,7 +38,7 @@ func main() {
 
 	// Set up the cron job
 	c := cron.New()
-	_, err2 := c.AddFunc("@hourly", handlers.CheckAndDeclineUnconfirmedDocuments)
+	_, err2 := c.AddFunc("* * * * *", handlers.CheckAndDeclineUnconfirmedDocuments)
 	if err2 != nil {
 		panic(err)
 	}
