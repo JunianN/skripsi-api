@@ -8,15 +8,16 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 )
 
 func main() {
 	// Load .env file
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatal("Error loading .env file")
-	// }
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	app := fiber.New(fiber.Config{
 		BodyLimit: 10 * 1024 * 1024, // set the max body size to 10MB
@@ -38,7 +39,7 @@ func main() {
 
 	// Set up the cron job
 	c := cron.New()
-	_, err2 := c.AddFunc("* * * * *", handlers.CheckAndDeclineUnconfirmedDocuments)
+	_, err2 := c.AddFunc("@hourly", handlers.CheckAndDeclineUnconfirmedDocuments)
 	if err2 != nil {
 		panic(err)
 	}
