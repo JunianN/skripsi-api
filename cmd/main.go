@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"translation-app-backend/internal/database"
 	"translation-app-backend/internal/handlers"
 	"translation-app-backend/internal/routes"
@@ -46,5 +47,6 @@ func main() {
 	c.Start()
 	defer c.Stop()
 
-	log.Fatal(app.Listen(":3001"))
+	port := os.Getenv("PORT")
+	log.Fatal(app.Listen(":" + port))
 }
