@@ -32,7 +32,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	api.Post("/ratings", handlers.SubmitRating(db))
 	api.Get("/:id/average-rating", handlers.GetTranslatorAverageRating(db))
 	api.Get("/documents/:id/rating", handlers.GetRatings(db))
-	
+
 	api.Get("/notifications", handlers.FetchNotifications(db))
 	api.Post("/notifications/read", handlers.MarkNotificationsAsRead(db))
 
@@ -50,6 +50,7 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	admin.Get("/translators", handlers.GetTranslators(db))
 	admin.Get("/translators/by-language", handlers.GetTranslatorsByLanguage(db))
 	admin.Post("/documents/:id/assign", handlers.AssignDocument(db))
+	admin.Delete("/translators/:id", handlers.DeleteTranslator(db))
 	admin.Get("/documents/:id/translated/download", handlers.DownloadTranslatedFile(db))
 	admin.Post("/documents/:id/translated/approve", handlers.ApproveTranslatedDocument(db))
 	admin.Post("/documents/:id/translated/reject", handlers.RejectTranslatedDocument(db))

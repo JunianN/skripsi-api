@@ -353,3 +353,32 @@ func GetTranslatorsByLanguage(db *gorm.DB) fiber.Handler {
 		return c.JSON(translators)
 	}
 }
+
+func DeleteTranslator(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		translatorID := c.Params("id")
+
+		// Check if translator exists and is actually a translator
+		var translator models.User
+		if err := db.Where("id = ? AND role = ?", translatorID, "translator").First(&translator).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Translator not found"})
+		}
+
+		// Check if translator has any ongoing translations
+		var ongoingDocuments int64
+		if err := db.Model(&models.Document{}).Where("translator_id = ? AND status = ?", translatorID, "Translating").Count(&ongoingDocuments).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to check ongoing translations"})
+		}
+
+		if ongoingDocuments > 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cannot delete translator with ongoing translations"})
+		}
+
+		// Delete the translator
+		if err := db.Delete(&translator).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to delete translator"})
+		}
+
+		return c.JSON(fiber.Map{"message": "Translator deleted successfully"})
+	}
+}
