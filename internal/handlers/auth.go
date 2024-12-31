@@ -19,11 +19,11 @@ func Register(db *gorm.DB) fiber.Handler {
 			Password            string   `json:"password"`
 			Role                string   `json:"role"`
 			ProficientLanguages []string `json:"proficient_languages"`
+			Categories          []string `json:"categories"`
 		}
 
 		if err := c.BodyParser(&input); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse JSON"})
-
 		}
 
 		if input.Role == "admin" {
@@ -57,9 +57,15 @@ func Register(db *gorm.DB) fiber.Handler {
 
 		if input.Role == "translator" {
 			user.ProficientLanguages = input.ProficientLanguages
+			user.Categories = input.Categories
 			user.Status = "Available"
+
+			// Validate the translator's categories
+			if err := user.Validate(); err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			}
 		}
-		
+
 		// Save the user to the database
 		result := db.Create(&user)
 		if result.Error != nil {
@@ -114,4 +120,44 @@ func generateJWT(user models.User) (string, error) {
 	})
 	token, err := claims.SignedString([]byte(os.Getenv("SECRET"))) // Use a secret from env variable in production
 	return token, err
+}
+
+// UpdateTranslatorCategories allows translators to update their categories
+func UpdateTranslatorCategories(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(float64)
+
+		var input struct {
+			Categories []string `json:"categories"`
+		}
+
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "cannot parse JSON"})
+		}
+
+		var user models.User
+		if err := db.First(&user, uint(userID)).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		}
+
+		if user.Role != "translator" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "Only translators can update categories"})
+		}
+
+		user.Categories = input.Categories
+
+		// Validate the updated categories
+		if err := user.Validate(); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		if err := db.Save(&user).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update categories"})
+		}
+
+		return c.JSON(fiber.Map{
+			"message":    "Categories updated successfully",
+			"categories": user.Categories,
+		})
+	}
 }

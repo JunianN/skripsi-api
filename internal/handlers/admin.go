@@ -337,16 +337,38 @@ func GetTranslatorsByLanguage(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		sourceLanguage := c.Query("source")
 		targetLanguage := c.Query("target")
+		category := c.Query("category")
+
+		// Validate required parameters
+		if sourceLanguage == "" || targetLanguage == "" || category == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "source language, target language, and category are required",
+			})
+		}
+
+		// Validate category value
+		switch category {
+		case models.CategoryGeneral, models.CategoryEngineering, models.CategorySocialSciences:
+			// Valid category, proceed
+		default:
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "invalid category: must be one of 'general', 'engineering', or 'social sciences'",
+			})
+		}
+
+		query := `
+			SELECT users.*, COALESCE(AVG(ratings.rating), 0) as average_rating
+			FROM users
+			LEFT JOIN ratings ON users.id = ratings.translator_id
+			WHERE users.role = ?
+			AND ARRAY[?] <@ users.proficient_languages 
+			AND ARRAY[?] <@ users.proficient_languages
+			AND ARRAY[?] <@ users.categories
+			GROUP BY users.id
+			ORDER BY average_rating DESC, users.status ASC`
 
 		var translators []TranslatorWithRating
-		if err := db.Raw(`
-        SELECT users.*, COALESCE(AVG(ratings.rating), 0) as average_rating
-        FROM users
-        LEFT JOIN ratings ON users.id = ratings.translator_id
-        WHERE users.role = ? AND ARRAY[?] <@ users.proficient_languages AND ARRAY[?] <@ users.proficient_languages
-        GROUP BY users.id
-        ORDER BY average_rating DESC, users.status ASC`,
-			"translator", sourceLanguage, targetLanguage).Scan(&translators).Error; err != nil {
+		if err := db.Raw(query, "translator", sourceLanguage, targetLanguage, category).Scan(&translators).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch translators"})
 		}
 
