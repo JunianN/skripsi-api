@@ -64,7 +64,7 @@ func UploadDocument(db *gorm.DB) fiber.Handler {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open file: " + err.Error()})
 		}
 		defer fileContent.Close()
-		
+
 		/// Read the file data
 		fileData, err := io.ReadAll(fileContent)
 		if err != nil {
@@ -74,6 +74,7 @@ func UploadDocument(db *gorm.DB) fiber.Handler {
 		// Extract other form fields
 		title := form.Value["title"][0]
 		description := form.Value["description"][0]
+		category := form.Value["category"][0]
 		sourceLanguage := form.Value["sourceLanguage"][0]
 		targetLanguage := form.Value["targetLanguage"][0]
 		numberOfPages := form.Value["numberOfPages"][0]
@@ -91,12 +92,18 @@ func UploadDocument(db *gorm.DB) fiber.Handler {
 			UserID:         uint(userID),
 			Title:          title,
 			Description:    description,
+			Category:       category,
 			FileContent:    fileData,
 			FileName:       file.Filename,
 			SourceLanguage: sourceLanguage,
 			TargetLanguage: targetLanguage,
 			NumberOfPages:  numberOfPagesInt,
 			Status:         "Pending", // Default status set when uploading a new document
+		}
+
+		// Validate the document before saving
+		if err := doc.Validate(); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 
 		if err := db.Create(&doc).Error; err != nil {
