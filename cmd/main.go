@@ -26,7 +26,7 @@ func main() {
 
 	// Middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://lekamantra.com/, http://localhost:3000",
+		AllowOrigins:     "https://lekamantra.com/, http://localhost:3000",
 		ExposeHeaders:    "Content-Disposition",
 		AllowCredentials: true,
 	}))
